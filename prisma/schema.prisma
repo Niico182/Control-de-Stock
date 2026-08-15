@@ -1,0 +1,236 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum UserRole {
+  SUPERUSER
+  ADMIN
+  EMPLOYEE
+}
+
+enum ProductType {
+  SALE
+  RENTAL
+  BOTH
+}
+
+enum StockMovementType {
+  INITIAL
+  SALE_PRESALE
+  SALE_COMPLETE
+  SALE_CANCEL
+  RENTAL_OUT
+  RENTAL_RETURN
+  RENTAL_MISSING
+  RENTAL_CANCEL
+  ADJUSTMENT
+}
+
+enum SaleStatus {
+  PRESALE
+  COMPLETED
+  CANCELLED
+}
+
+enum RentalStatus {
+  ACTIVE
+  RETURNED
+  CANCELLED
+}
+
+model User {
+  id             String   @id @default(uuid())
+  email          String   @unique
+  passwordHash   String
+  name           String
+  role           UserRole @default(EMPLOYEE)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  memberships    CompanyMember[]
+  stockMovements StockMovement[]
+  invitationsSent Invitation[] @relation("InvitedBy")
+}
+
+model Company {
+  id            String   @id @default(uuid())
+  name          String
+  slug          String   @unique
+  enableSales   Boolean  @default(true)
+  enableRentals Boolean  @default(true)
+  currency      String   @default("ARS")
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  members      CompanyMember[]
+  products     Product[]
+  saleOrders   SaleOrder[]
+  rentalOrders RentalOrder[]
+  invitations  Invitation[]
+}
+
+model CompanyMember {
+  id                String   @id @default(uuid())
+  userId            String
+  companyId         String
+  canManageProducts Boolean  @default(false)
+  canCreateOrders   Boolean  @default(true)
+  canViewReports    Boolean  @default(false)
+  canManageMembers  Boolean  @default(false)
+  createdAt         DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+}
+
+model Invitation {
+  id                  String    @id @default(uuid())
+  email               String
+  companyId           String
+  token               String    @unique
+  invitedById         String
+  expiresAt           DateTime
+  usedAt              DateTime?
+  canManageProducts   Boolean   @default(false)
+  canCreateOrders     Boolean   @default(true)
+  canViewReports      Boolean   @default(false)
+  canManageMembers    Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invitedBy User    @relation("InvitedBy", fields: [invitedById], references: [id])
+
+  @@index([email, companyId])
+}
+
+model Product {
+  id               String      @id @default(uuid())
+  companyId        String
+  code             String
+  name             String
+  price            Decimal
+  quantityTotal    Int         @default(0)
+  quantityReserved Int         @default(0)
+  quantityRented   Int         @default(0)
+  type             ProductType @default(BOTH)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  company          Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  stockMovements   StockMovement[]
+  saleOrderItems   SaleOrderItem[]
+  rentalOrderItems RentalOrderItem[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+}
+
+model StockMovement {
+  id            String            @id @default(uuid())
+  companyId     String
+  productId     String
+  userId        String?
+  type          StockMovementType
+  quantity      Int
+  referenceType String?
+  referenceId   String?
+  notes         String?
+  createdAt     DateTime          @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id])
+
+  @@index([companyId, productId])
+}
+
+model SaleOrder {
+  id          String     @id @default(uuid())
+  companyId   String
+  clientName  String
+  status      SaleStatus @default(PRESALE)
+  totalPrice  Decimal
+  notes       String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  completedAt DateTime?
+  cancelledAt DateTime?
+
+  company Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  items   SaleOrderItem[]
+
+  @@index([companyId, status])
+  @@index([companyId, createdAt])
+}
+
+model SaleOrderItem {
+  id          String  @id @default(uuid())
+  saleOrderId String
+  productId   String
+  quantity    Int
+  unitPrice   Decimal
+
+  saleOrder SaleOrder @relation(fields: [saleOrderId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id])
+}
+
+model RentalOrder {
+  id          String       @id @default(uuid())
+  companyId   String
+  clientName  String
+  address     String
+  rentalDate  DateTime
+  status      RentalStatus @default(ACTIVE)
+  totalPrice  Decimal
+  notes       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  returnedAt  DateTime?
+  cancelledAt DateTime?
+
+  company Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  items   RentalOrderItem[]
+  return  RentalReturn?
+
+  @@index([companyId, status])
+  @@index([companyId, rentalDate])
+}
+
+model RentalOrderItem {
+  id            String  @id @default(uuid())
+  rentalOrderId String
+  productId     String
+  quantity      Int
+  unitPrice     Decimal
+
+  rentalOrder RentalOrder @relation(fields: [rentalOrderId], references: [id], onDelete: Cascade)
+  product     Product     @relation(fields: [productId], references: [id])
+}
+
+model RentalReturn {
+  id            String   @id @default(uuid())
+  rentalOrderId String   @unique
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  rentalOrder RentalOrder        @relation(fields: [rentalOrderId], references: [id], onDelete: Cascade)
+  items       RentalReturnItem[]
+}
+
+model RentalReturnItem {
+  id               String @id @default(uuid())
+  rentalReturnId   String
+  productId        String
+  quantityReturned Int
+  quantityMissing  Int    @default(0)
+
+  rentalReturn RentalReturn @relation(fields: [rentalReturnId], references: [id], onDelete: Cascade)
+}
