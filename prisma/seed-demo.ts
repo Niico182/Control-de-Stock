@@ -2,6 +2,7 @@ import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { RENTAL_CATALOG } from "./rental-catalog";
 
 const adapter = new PrismaBetterSqlite3({
   url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
@@ -26,6 +27,8 @@ async function main() {
     console.log("La cuenta demo ya existe.");
     console.log("Email:", DEMO.adminEmail);
     console.log("Password:", DEMO.adminPassword);
+    console.log("");
+    console.log("Para resetear el catálogo de alquiler: npm run db:reset-rental-demo");
     return;
   }
 
@@ -62,22 +65,15 @@ async function main() {
       },
     });
 
-    const products = [
-      { code: "PRD-0001", name: "Silla plegable", price: 1500, quantity: 20, type: "BOTH" as const },
-      { code: "PRD-0002", name: "Mesa recta", price: 3500, quantity: 10, type: "RENTAL" as const },
-      { code: "PRD-0003", name: "Mantel blanco", price: 800, quantity: 50, type: "SALE" as const },
-      { code: "PRD-0004", name: "Equipo de sonido", price: 12000, quantity: 5, type: "BOTH" as const },
-    ];
-
-    for (const product of products) {
+    for (const item of RENTAL_CATALOG) {
       const created = await tx.product.create({
         data: {
           companyId: company.id,
-          code: product.code,
-          name: product.name,
-          price: product.price,
-          quantityTotal: product.quantity,
-          type: product.type,
+          code: item.code,
+          name: item.name,
+          price: item.price,
+          quantityTotal: item.quantity,
+          type: "RENTAL",
         },
       });
 
@@ -87,7 +83,7 @@ async function main() {
           productId: created.id,
           userId: admin.id,
           type: "INITIAL",
-          quantity: product.quantity,
+          quantity: item.quantity,
           notes: "Stock inicial demo",
         },
       });
@@ -100,8 +96,8 @@ async function main() {
   console.log("Email:", DEMO.adminEmail);
   console.log("Password:", DEMO.adminPassword);
   console.log("");
-  console.log("Productos cargados: 4 (venta, alquiler y ambos)");
-  console.log("Login: http://localhost:3000/login");
+  console.log(`Productos de alquiler cargados: ${RENTAL_CATALOG.length}`);
+  console.log("Login: http://localhost:3001/login");
 }
 
 main()
