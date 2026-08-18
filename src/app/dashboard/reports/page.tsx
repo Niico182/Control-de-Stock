@@ -3,16 +3,36 @@ import { getMonthlyEarnings } from "@/lib/reports";
 import { getCompanyContext } from "@/lib/tenant";
 import { formatCurrency } from "@/lib/utils";
 import { Card, CardHeader } from "@/components/ui/card";
+import { SortableTableHead } from "@/components/ui/sortable-table-head";
+import {
+  parseSortParams,
+  pickPreservedParams,
+  REPORT_SORT_COLUMNS,
+  sortReportRows,
+} from "@/lib/sorting";
 
-export default async function ReportsPage() {
+export default async function ReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sort?: string; dir?: string }>;
+}) {
   const { company, companyId, permissions } = await getCompanyContext();
+  const params = await searchParams;
+  const { sort, dir } = parseSortParams(params, REPORT_SORT_COLUMNS, "month");
+  const preservedParams = pickPreservedParams(params, ["sort", "dir"]);
 
   if (!permissions.canViewReports && permissions.role !== "ADMIN") {
     redirect("/dashboard");
   }
 
-  const earnings = await getMonthlyEarnings(companyId!, 12);
+  const earnings = sortReportRows(await getMonthlyEarnings(companyId!, 12), sort, dir);
   const yearTotal = earnings.reduce((sum, item) => sum + item.total, 0);
+  const headProps = {
+    currentSort: sort,
+    currentDir: dir,
+    basePath: "/dashboard/reports",
+    preservedParams,
+  };
 
   return (
     <div className="space-y-6">
@@ -29,11 +49,11 @@ export default async function ReportsPage() {
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-left text-slate-500">
-                <th className="px-3 py-2">Mes</th>
-                <th className="px-3 py-2">Ventas</th>
-                <th className="px-3 py-2">Alquileres</th>
-                <th className="px-3 py-2">Total</th>
+              <tr className="border-b border-slate-200 text-left">
+                <SortableTableHead label="Mes" column="month" {...headProps} />
+                <SortableTableHead label="Ventas" column="sales" {...headProps} />
+                <SortableTableHead label="Alquileres" column="rentals" {...headProps} />
+                <SortableTableHead label="Total" column="total" {...headProps} />
               </tr>
             </thead>
             <tbody>

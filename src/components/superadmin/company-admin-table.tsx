@@ -2,6 +2,8 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SortableTableHead } from "@/components/ui/sortable-table-head";
+import type { SortDirection } from "@/lib/sorting";
 
 type CompanyRow = {
   id: string;
@@ -19,25 +21,40 @@ type CompanyRow = {
 export function CompanyAdminTable({
   companies,
   onToggle,
+  sort,
+  dir,
+  basePath,
+  preservedParams = {},
 }: {
   companies: CompanyRow[];
   onToggle: (id: string, isActive: boolean) => Promise<{ error?: string; success?: boolean }>;
+  sort: string;
+  dir: SortDirection;
+  basePath: string;
+  preservedParams?: Record<string, string | undefined>;
 }) {
   if (companies.length === 0) {
     return <p className="text-sm text-slate-500">Todavía no hay empresas registradas.</p>;
   }
 
+  const headProps = {
+    currentSort: sort,
+    currentDir: dir,
+    basePath,
+    preservedParams,
+  };
+
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full text-sm">
         <thead>
-          <tr className="border-b border-slate-200 text-left text-slate-500">
-            <th className="px-3 py-2">Empresa</th>
-            <th className="px-3 py-2">Admin</th>
-            <th className="px-3 py-2">Módulos</th>
-            <th className="px-3 py-2">Uso</th>
-            <th className="px-3 py-2">Estado</th>
-            <th className="px-3 py-2">Acciones</th>
+          <tr className="border-b border-slate-200 text-left">
+            <SortableTableHead label="Empresa" column="name" {...headProps} />
+            <th className="px-3 py-2 text-slate-500">Admin</th>
+            <th className="px-3 py-2 text-slate-500">Módulos</th>
+            <SortableTableHead label="Uso" column="products" {...headProps} />
+            <SortableTableHead label="Estado" column="isActive" {...headProps} />
+            <th className="px-3 py-2 text-slate-500">Acciones</th>
           </tr>
         </thead>
         <tbody>

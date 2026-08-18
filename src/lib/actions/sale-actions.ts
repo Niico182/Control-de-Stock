@@ -9,6 +9,7 @@ import {
   reserveForSale,
 } from "@/lib/stock";
 import { getCompanyContext } from "@/lib/tenant";
+import { revalidateProductPaths } from "@/lib/products/revalidate-paths";
 import { saleOrderSchema } from "@/lib/validators";
 
 export async function createSaleAction(formData: FormData) {
@@ -108,7 +109,7 @@ export async function completeSaleAction(saleId: string) {
 
     revalidatePath("/dashboard/sales");
     revalidatePath("/dashboard/reports");
-    revalidatePath("/dashboard/products");
+    revalidateProductPaths();
     return { success: true };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Error al completar venta" };
@@ -147,7 +148,7 @@ export async function cancelSaleAction(saleId: string) {
     });
 
     revalidatePath("/dashboard/sales");
-    revalidatePath("/dashboard/products");
+    revalidateProductPaths();
     return { success: true };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Error al cancelar venta" };
