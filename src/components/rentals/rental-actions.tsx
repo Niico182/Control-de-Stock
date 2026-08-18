@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { returnRentalAction } from "@/lib/actions/rental-actions";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +27,7 @@ export function RentalActions({
   onCancel: (id: string) => Promise<{ error?: string; success?: boolean }>;
 }) {
   const [open, setOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [returnItems, setReturnItems] = useState(
     items.map((item) => ({
@@ -35,50 +37,34 @@ export function RentalActions({
     })),
   );
 
-  if (!canManage) {
-    return (
-      <a
-        href={`/api/rentals/${rentalId}/pdf`}
-        target="_blank"
-        rel="noreferrer"
-        className="text-sm text-blue-600 underline"
-      >
-        PDF
-      </a>
-    );
-  }
-
   return (
-    <div className="flex flex-wrap gap-2">
-      <a
-        href={`/api/rentals/${rentalId}/pdf`}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex h-8 items-center rounded-lg border border-slate-300 px-3 text-sm"
-      >
-        PDF
-      </a>
+    <>
+      <div className="flex flex-wrap gap-2">
+        <a
+          href={`/api/rentals/${rentalId}/pdf`}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex h-8 items-center rounded-lg border border-slate-300 px-3 text-sm"
+        >
+          PDF
+        </a>
 
-      {status === "ACTIVE" ? (
-        <>
-          <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>
-            Devolver
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={isPending}
-            onClick={() =>
-              startTransition(async () => {
-                await onCancel(rentalId);
-                window.location.reload();
-              })
-            }
-          >
-            Cancelar
-          </Button>
-        </>
-      ) : null}
+        {canManage && status === "ACTIVE" ? (
+          <>
+            <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>
+              Devolver
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isPending}
+              onClick={() => setCancelOpen(true)}
+            >
+              Cancelar
+            </Button>
+          </>
+        ) : null}
+      </div>
 
       {open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -167,6 +153,23 @@ export function RentalActions({
           </div>
         </div>
       ) : null}
-    </div>
+
+      <ConfirmDialog
+        open={cancelOpen}
+        title="¿Cancelar este pedido de alquiler?"
+        description="Los productos volverán al stock disponible. El pedido quedará marcado como cancelado y no podrás revertir esta acción."
+        confirmLabel="Sí, cancelar pedido"
+        cancelLabel="No, volver"
+        isPending={isPending}
+        onClose={() => setCancelOpen(false)}
+        onConfirm={() =>
+          startTransition(async () => {
+            await onCancel(rentalId);
+            setCancelOpen(false);
+            window.location.reload();
+          })
+        }
+      />
+    </>
   );
 }
