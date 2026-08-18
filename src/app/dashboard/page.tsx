@@ -4,6 +4,10 @@ import { getCompanyContext } from "@/lib/tenant";
 import { formatCurrency } from "@/lib/utils";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  getDefaultProductsPath,
+  PRODUCT_CATALOGS,
+} from "@/lib/products/catalog";
 
 export default async function DashboardPage() {
   const { company, companyId } = await getCompanyContext();
@@ -54,9 +58,19 @@ export default async function DashboardPage() {
             <Button variant="secondary">Nuevo alquiler</Button>
           </Link>
         ) : null}
-        <Link href="/dashboard/products">
+        <Link href={getDefaultProductsPath(company.enableSales, company.enableRentals)}>
           <Button variant="outline">Ver productos</Button>
         </Link>
+        {company.enableSales && company.enableRentals ? (
+          <>
+            <Link href={PRODUCT_CATALOGS.SALE.listHref}>
+              <Button variant="outline">Inventario venta</Button>
+            </Link>
+            <Link href={PRODUCT_CATALOGS.RENTAL.listHref}>
+              <Button variant="outline">Inventario alquiler</Button>
+            </Link>
+          </>
+        ) : null}
       </div>
     </div>
   );

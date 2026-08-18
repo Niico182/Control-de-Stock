@@ -19,6 +19,7 @@ import {
   updateProductSchema,
 } from "@/lib/validators";
 import { slugify } from "@/lib/utils";
+import { revalidateProductPaths } from "@/lib/products/revalidate-paths";
 
 export async function createProductAction(formData: FormData) {
   try {
@@ -62,7 +63,7 @@ export async function createProductAction(formData: FormData) {
       }
     });
 
-    revalidatePath("/dashboard/products");
+    revalidateProductPaths();
     return { success: true };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Error al crear producto" };
@@ -79,7 +80,6 @@ export async function updateProductAction(formData: FormData) {
       name: formData.get("name"),
       price: formData.get("price"),
       quantity: formData.get("quantity"),
-      type: formData.get("type"),
     });
 
     if (!parsed.success) {
@@ -108,7 +108,6 @@ export async function updateProductAction(formData: FormData) {
         data: {
           name: parsed.data.name,
           price: parsed.data.price,
-          type: parsed.data.type,
           quantityTotal: parsed.data.quantity,
         },
       });
@@ -130,7 +129,7 @@ export async function updateProductAction(formData: FormData) {
       }
     });
 
-    revalidatePath("/dashboard/products");
+    revalidateProductPaths();
     return { success: true };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Error al actualizar producto" };
@@ -146,7 +145,7 @@ export async function deleteProductAction(productId: string) {
       where: { id: productId, companyId: companyId! },
     });
 
-    revalidatePath("/dashboard/products");
+    revalidateProductPaths();
     return { success: true };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Error al eliminar producto" };

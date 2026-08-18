@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isValidArgDate } from "@/lib/dates";
 
 export const loginSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -9,11 +10,14 @@ export const productSchema = z.object({
   name: z.string().min(1, "El nombre es obligatorio"),
   price: z.coerce.number().positive("El precio debe ser mayor a 0"),
   quantity: z.coerce.number().int().min(0, "La cantidad no puede ser negativa"),
-  type: z.enum(["SALE", "RENTAL", "BOTH"]),
+  type: z.enum(["SALE", "RENTAL"]),
 });
 
-export const updateProductSchema = productSchema.extend({
+export const updateProductSchema = z.object({
   productId: z.string().uuid(),
+  name: z.string().min(1, "El nombre es obligatorio"),
+  price: z.coerce.number().positive("El precio debe ser mayor a 0"),
+  quantity: z.coerce.number().int().min(0, "La cantidad no puede ser negativa"),
 });
 
 export const saleOrderSchema = z.object({
@@ -33,7 +37,10 @@ export const saleOrderSchema = z.object({
 export const rentalOrderSchema = z.object({
   clientName: z.string().min(1, "El nombre del cliente es obligatorio"),
   address: z.string().min(1, "La dirección es obligatoria"),
-  rentalDate: z.string().min(1, "La fecha es obligatoria"),
+  rentalDate: z
+    .string()
+    .min(1, "La fecha es obligatoria")
+    .refine(isValidArgDate, "Usá el formato DD/MM/AAAA"),
   notes: z.string().optional(),
   items: z
     .array(

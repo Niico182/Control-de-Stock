@@ -257,5 +257,9 @@ export async function cancelRental(
 
 export async function generateProductCode(companyId: string) {
   const count = await prisma.product.count({ where: { companyId } });
-  return `PRD-${String(count + 1).padStart(4, "0")}`;
+  return formatProductCode(count + 1);
+}
+
+export function formatProductCode(sequence: number) {
+  return `PRD-${String(sequence).padStart(4, "0")}`;
 }

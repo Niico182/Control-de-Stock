@@ -1,43 +1,59 @@
-import { deleteProductAction } from "@/lib/actions/company-actions";
-import { ProductForm } from "@/components/products/product-form";
-import { ProductTable } from "@/components/products/product-table";
-import { prisma } from "@/lib/db";
-import { getCompanyContext } from "@/lib/tenant";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Card, CardHeader } from "@/components/ui/card";
+import {
+  getDefaultProductsPath,
+  PRODUCT_CATALOGS,
+} from "@/lib/products/catalog";
+import { getCompanyContext } from "@/lib/tenant";
 
-export default async function ProductsPage() {
-  const { companyId, permissions } = await getCompanyContext();
+export default async function ProductsHubPage() {
+  const { company } = await getCompanyContext();
 
-  const products = await prisma.product.findMany({
-    where: { companyId: companyId! },
-    orderBy: { createdAt: "desc" },
-  });
+  if (!company.enableSales && !company.enableRentals) {
+    return (
+      <p className="text-slate-600">No hay módulos de productos activos para esta empresa.</p>
+    );
+  }
+
+  const defaultPath = getDefaultProductsPath(company.enableSales, company.enableRentals);
+
+  if (defaultPath !== "/dashboard/products") {
+    redirect(defaultPath);
+  }
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold">Productos</h2>
-        <p className="text-slate-600">Gestioná nombre, precio, cantidad e ID único.</p>
+        <p className="text-slate-600">
+          Elegí el catálogo que querés gestionar. Venta y alquiler son inventarios separados.
+        </p>
       </div>
 
-      {permissions.canManageProducts ? (
-        <Card>
-          <CardHeader title="Nuevo producto" />
-          <ProductForm />
-        </Card>
-      ) : null}
+      <div className="grid gap-4 md:grid-cols-2">
+        {company.enableSales ? (
+          <Link href={PRODUCT_CATALOGS.SALE.listHref}>
+            <Card className="transition-shadow hover:shadow-md">
+              <CardHeader
+                title={PRODUCT_CATALOGS.SALE.label}
+                description="Productos que se venden. Stock con reservas de preventa."
+              />
+            </Card>
+          </Link>
+        ) : null}
 
-      <Card>
-        <CardHeader title="Inventario" description={`${products.length} productos registrados`} />
-        <ProductTable
-          products={products.map((product) => ({
-            ...product,
-            price: Number(product.price),
-          }))}
-          canManage={permissions.canManageProducts}
-          onDelete={deleteProductAction}
-        />
-      </Card>
+        {company.enableRentals ? (
+          <Link href={PRODUCT_CATALOGS.RENTAL.listHref}>
+            <Card className="transition-shadow hover:shadow-md">
+              <CardHeader
+                title={PRODUCT_CATALOGS.RENTAL.label}
+                description="Productos que se alquilan. Stock con unidades en alquiler activo."
+              />
+            </Card>
+          </Link>
+        ) : null}
+      </div>
     </div>
   );
 }
