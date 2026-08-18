@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DashboardNav } from "@/components/layout/dashboard-nav";
+import { DashboardLayoutClient } from "@/components/layout/dashboard-layout-client";
 import { requireSuperuser } from "@/lib/tenant";
 
 export const metadata: Metadata = {
@@ -13,15 +13,14 @@ export default async function SuperadminLayout({ children }: { children: React.R
   await requireSuperuser();
 
   return (
-    <div className="flex min-h-screen">
-      <DashboardNav role="SUPERUSER" enableSales enableRentals />
-      <main className="flex-1 overflow-auto">
-        <div className="border-b border-slate-200 bg-white px-8 py-4">
-          <p className="text-sm text-slate-500">Plataforma</p>
-          <h1 className="text-xl font-semibold text-slate-900">Superadministración</h1>
-        </div>
-        <div className="p-8">{children}</div>
-      </main>
-    </div>
+    <DashboardLayoutClient
+      role="SUPERUSER"
+      enableSales
+      enableRentals
+      sessionLabel="Plataforma"
+      title="Superadministración"
+    >
+      {children}
+    </DashboardLayoutClient>
   );
 }
