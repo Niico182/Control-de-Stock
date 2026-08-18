@@ -1,9 +1,134 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-background: #f8fafc;
+  --color-foreground: #0f172a;
+  --color-muted: #64748b;
+  --color-card: #ffffff;
+  --color-card-foreground: #0f172a;
+  --color-border: #e2e8f0;
+  --color-input: #ffffff;
+  --color-accent: #f1f5f9;
+  --color-accent-foreground: #0f172a;
+}
+
 :root {
   color-scheme: light;
 }
 
+.dark {
+  color-scheme: dark;
+  --color-background: #020617;
+  --color-foreground: #f8fafc;
+  --color-muted: #94a3b8;
+  --color-card: #0f172a;
+  --color-card-foreground: #f8fafc;
+  --color-border: #1e293b;
+  --color-input: #0f172a;
+  --color-accent: #1e293b;
+  --color-accent-foreground: #f8fafc;
+}
+
 body {
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+}
+
+@layer utilities {
+  .dark .bg-white {
+    background-color: var(--color-card);
+  }
+
+  .dark .bg-slate-50 {
+    background-color: var(--color-background);
+  }
+
+  .dark .bg-slate-100 {
+    background-color: var(--color-accent);
+  }
+
+  .dark .text-slate-900 {
+    color: var(--color-foreground);
+  }
+
+  .dark .text-slate-700 {
+    color: #cbd5e1;
+  }
+
+  .dark .text-slate-600,
+  .dark .text-slate-500 {
+    color: var(--color-muted);
+  }
+
+  .dark .text-slate-400 {
+    color: #64748b;
+  }
+
+  .dark .text-slate-300 {
+    color: #94a3b8;
+  }
+
+  .dark .border-slate-100,
+  .dark .border-slate-200 {
+    border-color: var(--color-border);
+  }
+
+  .dark .border-slate-300 {
+    border-color: #334155;
+  }
+
+  .dark .hover\:bg-slate-50:hover,
+  .dark .hover\:bg-slate-100:hover {
+    background-color: var(--color-accent);
+  }
+
+  .dark .hover\:bg-slate-200:hover {
+    background-color: #334155;
+  }
+
+  .dark .hover\:text-slate-900:hover {
+    color: var(--color-foreground);
+  }
+
+  .dark .bg-emerald-100 {
+    background-color: rgb(6 78 59 / 0.35);
+  }
+
+  .dark .text-emerald-700,
+  .dark .text-emerald-600 {
+    color: #6ee7b7;
+  }
+
+  .dark .bg-amber-100 {
+    background-color: rgb(120 53 15 / 0.35);
+  }
+
+  .dark .text-amber-700 {
+    color: #fcd34d;
+  }
+
+  .dark .bg-red-100 {
+    background-color: rgb(127 29 29 / 0.35);
+  }
+
+  .dark .text-red-600,
+  .dark .text-red-700 {
+    color: #fca5a5;
+  }
+
+  .dark .bg-blue-100 {
+    background-color: rgb(30 58 138 / 0.35);
+  }
+
+  .dark .text-blue-600,
+  .dark .text-blue-700 {
+    color: #93c5fd;
+  }
+
+  .dark .text-blue-600.underline {
+    color: #93c5fd;
+  }
 }

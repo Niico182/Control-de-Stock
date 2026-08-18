@@ -1,26 +1,32 @@
 import Link from "next/link";
 import { ArrowRight, BarChart3, Boxes, ShieldCheck } from "lucide-react";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen">
-      <header className="border-b border-slate-200 bg-white">
+      <header className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div>
-            <p className="text-sm font-semibold text-slate-900">Control de Stock</p>
-            <p className="text-xs text-slate-500">SaaS multi-empresa</p>
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+              Control de Stock
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">SaaS multi-empresa</p>
           </div>
-          <Link href="/login">
-            <Button>Iniciar sesión</Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <ThemeToggle compact />
+            <Link href="/login">
+              <Button>Iniciar sesión</Button>
+            </Link>
+          </div>
         </div>
       </header>
 
       <main>
         <section className="mx-auto max-w-6xl px-6 py-20">
           <div className="max-w-3xl">
-            <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+            <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-slate-100 sm:text-5xl">
               Controlá inventario, ventas y alquileres en un solo lugar
             </h1>
             <p className="mt-6 text-lg text-slate-600">
@@ -38,7 +44,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="border-t border-slate-200 bg-white py-16">
+        <section className="border-t border-slate-200 bg-white py-16 dark:border-slate-800 dark:bg-slate-900">
           <div className="mx-auto grid max-w-6xl gap-6 px-6 md:grid-cols-3">
             <Feature
               icon={Boxes}
@@ -72,8 +78,8 @@ function Feature({
   description: string;
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 p-6">
-      <Icon className="h-8 w-8 text-slate-900" />
+    <div className="rounded-xl border border-slate-200 p-6 dark:border-slate-800 dark:bg-slate-950/40">
+      <Icon className="h-8 w-8 text-slate-900 dark:text-slate-100" />
       <h2 className="mt-4 text-lg font-semibold">{title}</h2>
       <p className="mt-2 text-sm text-slate-600">{description}</p>
     </div>
