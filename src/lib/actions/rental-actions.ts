@@ -9,6 +9,8 @@ import {
   returnRentalProducts,
 } from "@/lib/stock";
 import { getCompanyContext } from "@/lib/tenant";
+import { parseArgDate } from "@/lib/dates";
+import { revalidateProductPaths } from "@/lib/products/revalidate-paths";
 import { rentalOrderSchema, rentalReturnSchema } from "@/lib/validators";
 
 export async function createRentalAction(formData: FormData) {
@@ -46,7 +48,7 @@ export async function createRentalAction(formData: FormData) {
           companyId: companyId!,
           clientName: parsed.data.clientName,
           address: parsed.data.address,
-          rentalDate: new Date(parsed.data.rentalDate),
+          rentalDate: parseArgDate(parsed.data.rentalDate)!,
           notes: parsed.data.notes,
           totalPrice,
           status: "ACTIVE",
@@ -73,7 +75,7 @@ export async function createRentalAction(formData: FormData) {
     });
 
     revalidatePath("/dashboard/rentals");
-    revalidatePath("/dashboard/products");
+    revalidateProductPaths();
     return { success: true };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Error al crear alquiler" };
@@ -147,7 +149,7 @@ export async function returnRentalAction(formData: FormData) {
 
     revalidatePath("/dashboard/rentals");
     revalidatePath("/dashboard/reports");
-    revalidatePath("/dashboard/products");
+    revalidateProductPaths();
     return { success: true };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Error al registrar devolución" };
@@ -186,7 +188,7 @@ export async function cancelRentalAction(rentalId: string) {
     });
 
     revalidatePath("/dashboard/rentals");
-    revalidatePath("/dashboard/products");
+    revalidateProductPaths();
     return { success: true };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Error al cancelar alquiler" };

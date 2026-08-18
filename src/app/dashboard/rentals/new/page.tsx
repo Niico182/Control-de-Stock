@@ -14,7 +14,7 @@ export default async function NewRentalPage() {
   const products = await prisma.product.findMany({
     where: {
       companyId: companyId!,
-      type: { in: ["RENTAL", "BOTH"] },
+      type: "RENTAL",
     },
     orderBy: { name: "asc" },
   });

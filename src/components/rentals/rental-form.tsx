@@ -10,6 +10,7 @@ import {
   type ProductOption,
 } from "@/components/orders/order-product-picker";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/ui/date-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatCurrency } from "@/lib/utils";
@@ -63,7 +64,10 @@ export function RentalForm({ products }: { products: ProductOption[] }) {
       </div>
       <div>
         <Label htmlFor="rentalDate">Fecha</Label>
-        <Input id="rentalDate" name="rentalDate" type="date" required />
+        <DateInput id="rentalDate" name="rentalDate" required />
+        <p className="mt-1 text-xs text-slate-500">
+          Escribí la fecha o usá el ícono de calendario. Formato: DD/MM/AAAA
+        </p>
       </div>
 
       <OrderItemsEditor products={products} items={rows} onChange={setRows} />
