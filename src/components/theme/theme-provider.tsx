@@ -1,5 +1,6 @@
 "use client";
 
+import { useServerInsertedHTML } from "next/navigation";
 import {
   createContext,
   useContext,
@@ -7,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { THEME_INIT_SCRIPT, THEME_KEY } from "@/components/theme/constants";
 
 export type Theme = "light" | "dark" | "system";
 
@@ -15,8 +17,6 @@ type ThemeContextValue = {
   resolvedTheme: "light" | "dark";
   setTheme: (theme: Theme) => void;
 };
-
-const THEME_KEY = "control-de-stock-theme";
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
@@ -40,6 +40,10 @@ function applyTheme(theme: Theme) {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("system");
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
+
+  useServerInsertedHTML(() => (
+    <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+  ));
 
   useEffect(() => {
     const stored = localStorage.getItem(THEME_KEY) as Theme | null;
@@ -85,12 +89,3 @@ export function useTheme() {
   return context;
 }
 
-export function ThemeScript() {
-  return (
-    <script
-      dangerouslySetInnerHTML={{
-        __html: `(function(){try{var t=localStorage.getItem("${THEME_KEY}")||"system";var d=t==="dark"||(t==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("dark");}catch(e){}})();`,
-      }}
-    />
-  );
-}
