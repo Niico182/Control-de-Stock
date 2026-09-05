@@ -16,14 +16,14 @@ export type ProductOption = {
 };
 
 export type OrderLineItem = {
-  productId: string;
+  productVariantId: string;
   quantity: number;
   unitPrice: number;
 };
 
 type ItemRow = {
   key: string;
-  productId: string;
+  productVariantId: string;
   quantity: number;
 };
 
@@ -33,17 +33,17 @@ type OrderItemsEditorProps = {
   onChange: (items: ItemRow[]) => void;
 };
 
-function createRow(productId = ""): ItemRow {
+function createRow(productVariantId = ""): ItemRow {
   return {
     key: crypto.randomUUID(),
-    productId,
+    productVariantId,
     quantity: 1,
   };
 }
 
 function isItemComplete(item: ItemRow, productMap: Map<string, ProductOption>) {
-  if (!item.productId || item.quantity < 1) return false;
-  return productMap.has(item.productId);
+  if (!item.productVariantId || item.quantity < 1) return false;
+  return productMap.has(item.productVariantId);
 }
 
 export function createInitialOrderItems(products: ProductOption[]): ItemRow[] {
@@ -61,7 +61,10 @@ export function OrderItemsEditor({ products, items, onChange }: OrderItemsEditor
     return <p className="text-sm text-slate-500">No hay productos disponibles.</p>;
   }
 
-  function updateItem(key: string, patch: Partial<Pick<ItemRow, "productId" | "quantity">>) {
+  function updateItem(
+    key: string,
+    patch: Partial<Pick<ItemRow, "productVariantId" | "quantity">>,
+  ) {
     onChange(
       items.map((item) => (item.key === key ? { ...item, ...patch } : item)),
     );
@@ -95,7 +98,7 @@ export function OrderItemsEditor({ products, items, onChange }: OrderItemsEditor
           </thead>
           <tbody>
             {items.map((item) => {
-              const product = productMap.get(item.productId);
+              const product = productMap.get(item.productVariantId);
               const maxQuantity = product?.available ?? 1;
               const unitPrice = product?.price ?? 0;
               const subtotal = item.quantity * unitPrice;
@@ -104,9 +107,9 @@ export function OrderItemsEditor({ products, items, onChange }: OrderItemsEditor
                 <tr key={item.key} className="border-t border-slate-100">
                   <td className="px-3 py-2 min-w-[220px]">
                     <Select
-                      value={item.productId}
+                      value={item.productVariantId}
                       onChange={(event) =>
-                        updateItem(item.key, { productId: event.target.value })
+                        updateItem(item.key, { productVariantId: event.target.value })
                       }
                     >
                       <option value="">Seleccionar producto...</option>
@@ -134,10 +137,10 @@ export function OrderItemsEditor({ products, items, onChange }: OrderItemsEditor
                     />
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">
-                    {item.productId ? formatCurrency(unitPrice) : "—"}
+                    {item.productVariantId ? formatCurrency(unitPrice) : "—"}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap font-medium">
-                    {item.productId ? formatCurrency(subtotal) : "—"}
+                    {item.productVariantId ? formatCurrency(subtotal) : "—"}
                   </td>
                   <td className="px-3 py-2">
                     {items.length > 1 ? (
@@ -181,18 +184,18 @@ export function buildOrderItems(
   const merged = new Map<string, OrderLineItem>();
 
   for (const row of rows) {
-    if (!row.productId || row.quantity <= 0) continue;
+    if (!row.productVariantId || row.quantity <= 0) continue;
 
-    const product = productMap.get(row.productId);
+    const product = productMap.get(row.productVariantId);
     if (!product) continue;
 
-    const existing = merged.get(row.productId);
+    const existing = merged.get(row.productVariantId);
 
     if (existing) {
       existing.quantity += row.quantity;
     } else {
-      merged.set(row.productId, {
-        productId: row.productId,
+      merged.set(row.productVariantId, {
+        productVariantId: row.productVariantId,
         quantity: row.quantity,
         unitPrice: product.price,
       });

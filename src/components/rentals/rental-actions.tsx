@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 type RentalItem = {
-  productId: string;
+  productVariantId: string;
   productName: string;
   quantity: number;
 };
@@ -31,7 +31,7 @@ export function RentalActions({
   const [isPending, startTransition] = useTransition();
   const [returnItems, setReturnItems] = useState(
     items.map((item) => ({
-      productId: item.productId,
+      productVariantId: item.productVariantId,
       quantityReturned: item.quantity,
       quantityMissing: 0,
     })),
@@ -92,7 +92,7 @@ export function RentalActions({
               }}
             >
               {items.map((item, index) => (
-                <div key={item.productId} className="rounded-lg border border-slate-200 p-3">
+                <div key={item.productVariantId} className="rounded-lg border border-slate-200 p-3">
                   <p className="font-medium">{item.productName}</p>
                   <p className="text-xs text-slate-500">Alquiladas: {item.quantity}</p>
                   <div className="mt-2 grid grid-cols-2 gap-2">

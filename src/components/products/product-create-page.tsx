@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getProductCategories } from "@/lib/actions/category-actions";
 import { ProductBulkImport } from "@/components/products/product-bulk-import";
+import { ProductCategoryManager } from "@/components/products/product-category-manager";
 import { ProductForm } from "@/components/products/product-form";
 import { Card, CardHeader } from "@/components/ui/card";
 import {
@@ -30,6 +32,8 @@ export async function ProductCreatePage({ catalog }: ProductCreatePageProps) {
     redirect(getDefaultProductsPath(company.enableSales, company.enableRentals));
   }
 
+  const categories = await getProductCategories(catalog);
+
   return (
     <div className="w-full space-y-6">
       <div>
@@ -43,11 +47,25 @@ export async function ProductCreatePage({ catalog }: ProductCreatePageProps) {
       </div>
 
       <Card>
-        <CardHeader title="Nuevo producto" description={`Alta manual para ${config.singular}.`} />
-        <ProductForm productType={catalog} redirectHref={config.listHref} />
+        <CardHeader
+          title="Categorías"
+          description="Las categorías se muestran siempre acá. Creá las que necesites antes de cargar productos."
+        />
+        <ProductCategoryManager catalogType={catalog} categories={categories} />
       </Card>
 
-      <ProductBulkImport productType={catalog} />
+      <Card>
+        <CardHeader title="Nuevo producto" description={`Alta manual para ${config.singular}.`} />
+        <ProductForm
+          productType={catalog}
+          redirectHref={config.listHref}
+          categories={categories}
+        />
+      </Card>
+
+      <div id="import">
+        <ProductBulkImport productType={catalog} categories={categories} />
+      </div>
     </div>
   );
 }

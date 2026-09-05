@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { importProductsBulkAction } from "@/lib/actions/product-import-actions";
 import {
   downloadSampleCsv,
@@ -10,18 +11,29 @@ import {
 } from "@/lib/products/csv-import";
 import type { ProductCatalogType } from "@/lib/products/catalog";
 import { PRODUCT_CATALOGS } from "@/lib/products/catalog";
+import type { ProductCategoryOption } from "@/lib/products/categories";
+import { AlertDialog } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ClientSortableTable } from "@/components/ui/client-sortable-table";
 
-export function ProductBulkImport({ productType }: { productType: ProductCatalogType }) {
+type ValidImportRow = BulkProductRow & { rowNumber: number };
+
+export function ProductBulkImport({
+  productType,
+  categories,
+}: {
+  productType: ProductCatalogType;
+  categories: ProductCategoryOption[];
+}) {
+  const router = useRouter();
   const catalogLabel = PRODUCT_CATALOGS[productType].singular;
   const inputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [results, setResults] = useState<ProductImportRowResult[]>([]);
   const [canImport, setCanImport] = useState(false);
-  const [validRows, setValidRows] = useState<BulkProductRow[]>([]);
-  const [message, setMessage] = useState<string | null>(null);
+  const [validRows, setValidRows] = useState<ValidImportRow[]>([]);
+  const [importedCount, setImportedCount] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -29,8 +41,25 @@ export function ProductBulkImport({ productType }: { productType: ProductCatalog
     setResults([]);
     setCanImport(false);
     setValidRows([]);
-    setMessage(null);
     setError(null);
+  }
+
+  function clearFileInput() {
+    setFileName(null);
+    if (inputRef.current) {
+      inputRef.current.value = "";
+    }
+  }
+
+  function handleImportSuccess(count: number) {
+    resetPreview();
+    clearFileInput();
+    setImportedCount(count);
+  }
+
+  function handleSuccessDialogClose() {
+    setImportedCount(null);
+    router.refresh();
   }
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -47,7 +76,7 @@ export function ProductBulkImport({ productType }: { productType: ProductCatalog
     const reader = new FileReader();
     reader.onload = () => {
       const text = String(reader.result ?? "");
-      const parsed = parseAndValidateProductCsv(text, productType);
+      const parsed = parseAndValidateProductCsv(text, productType, categories);
       setResults(parsed.results);
       setCanImport(parsed.canImport);
       setValidRows(parsed.validRows);
@@ -104,20 +133,25 @@ export function ProductBulkImport({ productType }: { productType: ProductCatalog
               columns={[
                 { key: "rowNumber", label: "Fila", getValue: (row) => row.rowNumber },
                 { key: "name", label: "Nombre", getValue: (row) => row.name },
+                { key: "stock", label: "Stock", getValue: (row) => row.stock },
                 { key: "price", label: "Precio", getValue: (row) => row.price },
-                { key: "quantity", label: "Cantidad", getValue: (row) => row.quantity },
-                { key: "code", label: "Código", getValue: (row) => row.code },
+                { key: "color", label: "Color", getValue: (row) => row.color },
+                { key: "code", label: "SKU", getValue: (row) => row.code },
+                { key: "category", label: "Categoría", getValue: (row) => row.category },
                 { key: "status", label: "Estado", getValue: (row) => row.status },
               ]}
               rows={results.map((row) => ({
                 id: String(row.rowNumber),
                 rowNumber: row.rowNumber,
                 name: row.raw.name ?? "—",
+                stock: Number(row.raw.quantity ?? 0),
+                stockDisplay: row.raw.quantity ?? "—",
                 price: Number(row.raw.price ?? 0),
                 priceDisplay: row.raw.price ?? "—",
-                quantity: Number(row.raw.quantity ?? 0),
-                quantityDisplay: row.raw.quantity ?? "0",
-                code: row.raw.code || "Auto",
+                code: row.raw.sku || "Auto",
+                color: row.raw.color || "—",
+                category: row.raw.categoryName || "—",
+                estado: row.raw.isActive || "Activo",
                 status: row.errors.length === 0 ? "OK" : row.errors.join(" "),
                 hasError: row.errors.length > 0,
               }))}
@@ -126,9 +160,11 @@ export function ProductBulkImport({ productType }: { productType: ProductCatalog
                 <tr key={row.id} className="border-t border-slate-100">
                   <td className="px-3 py-2">{row.rowNumber}</td>
                   <td className="px-3 py-2">{row.name}</td>
+                  <td className="px-3 py-2">{row.stockDisplay}</td>
                   <td className="px-3 py-2">{row.priceDisplay}</td>
-                  <td className="px-3 py-2">{row.quantityDisplay}</td>
+                  <td className="px-3 py-2">{row.color}</td>
                   <td className="px-3 py-2">{row.code}</td>
+                  <td className="px-3 py-2">{row.category}</td>
                   <td className="px-3 py-2">
                     {row.hasError ? (
                       <span className="text-red-600">{row.status}</span>
@@ -148,18 +184,13 @@ export function ProductBulkImport({ productType }: { productType: ProductCatalog
               onClick={() =>
                 startTransition(async () => {
                   setError(null);
-                  setMessage(null);
                   const result = await importProductsBulkAction(validRows);
                   if (result.error) {
                     setError(result.error);
                     return;
                   }
 
-                  setMessage(`${result.imported} productos importados correctamente.`);
-                  resetPreview();
-                  setFileName(null);
-                  if (inputRef.current) inputRef.current.value = "";
-                  window.location.reload();
+                  handleImportSuccess(result.imported ?? validRows.length);
                 })
               }
             >
@@ -173,12 +204,23 @@ export function ProductBulkImport({ productType }: { productType: ProductCatalog
         </div>
       ) : null}
 
-      {message ? <p className="mt-3 text-sm text-emerald-700">{message}</p> : null}
       {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
 
+      <AlertDialog
+        open={importedCount !== null}
+        title="Importación exitosa"
+        description={
+          importedCount === 1
+            ? "Se importó 1 variación correctamente desde el CSV."
+            : `Se importaron ${importedCount} variaciones correctamente desde el CSV.`
+        }
+        onClose={handleSuccessDialogClose}
+      />
+
       <p className="mt-4 text-xs text-slate-500">
-        Columnas: nombre, precio, cantidad, codigo. Todos los productos se importan como{" "}
-        {catalogLabel}. Si no indicás código, se genera automáticamente.
+        Columnas obligatorias: nombre, stock, precio. Opcionales: color, codigo, categoria,
+        descripcion, costo, estado (Activo/Inactivo). Filas con el mismo nombre crean variaciones
+        del mismo producto. La categoría debe existir previamente en este catálogo.
       </p>
     </Card>
   );

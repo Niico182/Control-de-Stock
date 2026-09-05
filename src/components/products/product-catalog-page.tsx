@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { deleteProductAction } from "@/lib/actions/company-actions";
+import {
+  deleteProductAction,
+  getProductForEditAction,
+} from "@/lib/actions/company-actions";
+import { getProductCategories } from "@/lib/actions/category-actions";
+import { ProductCatalogActions, ProductCatalogEmptyState } from "@/components/products/product-catalog-actions";
+import { ProductSearch } from "@/components/products/product-search";
 import { ProductTable } from "@/components/products/product-table";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -12,17 +18,25 @@ import {
 } from "@/lib/products/catalog";
 import { prisma } from "@/lib/db";
 import { paginationMeta, parsePaginationParams } from "@/lib/pagination";
+import { parseProductSearchQuery, variantSearchFilter } from "@/lib/products/search";
+import { getVariantUnitPrice } from "@/lib/products/variants";
 import {
   pickPreservedParams,
   PRODUCT_SORT_COLUMNS,
   parseSortParams,
-  productOrderBy,
+  variantOrderBy,
 } from "@/lib/sorting";
 import { getCompanyContext } from "@/lib/tenant";
 
 type ProductCatalogPageProps = {
   catalog: ProductCatalogType;
-  searchParams: Promise<{ page?: string; pageSize?: string; sort?: string; dir?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    pageSize?: string;
+    sort?: string;
+    dir?: string;
+    q?: string;
+  }>;
 };
 
 export async function ProductCatalogPage({ catalog, searchParams }: ProductCatalogPageProps) {
@@ -30,7 +44,9 @@ export async function ProductCatalogPage({ catalog, searchParams }: ProductCatal
   const config = PRODUCT_CATALOGS[catalog];
   const params = await searchParams;
   const { page, pageSize, skip, take } = parsePaginationParams(params);
-  const { sort, dir } = parseSortParams(params, PRODUCT_SORT_COLUMNS, "code");
+  const { sort, dir } = parseSortParams(params, PRODUCT_SORT_COLUMNS, "name");
+
+  const searchQuery = parseProductSearchQuery(params.q);
 
   if (catalog === "SALE" && !company.enableSales) {
     redirect(getDefaultProductsPath(company.enableSales, company.enableRentals));
@@ -40,17 +56,29 @@ export async function ProductCatalogPage({ catalog, searchParams }: ProductCatal
     redirect(getDefaultProductsPath(company.enableSales, company.enableRentals));
   }
 
-  const where = { companyId: companyId!, type: catalog };
-  const preservedParams = pickPreservedParams(params, ["sort", "dir"]);
+  const where = {
+    companyId: companyId!,
+    product: {
+      type: catalog,
+    },
+    ...variantSearchFilter(searchQuery),
+  };
+  const preservedParams = pickPreservedParams(params, ["sort", "dir", "q"]);
 
-  const [products, total] = await Promise.all([
-    prisma.product.findMany({
+  const [variants, total, categories] = await Promise.all([
+    prisma.productVariant.findMany({
       where,
-      orderBy: productOrderBy(sort, dir),
+      include: {
+        product: {
+          include: { category: true },
+        },
+      },
+      orderBy: variantOrderBy(sort, dir),
       skip,
       take,
     }),
-    prisma.product.count({ where }),
+    prisma.productVariant.count({ where }),
+    getProductCategories(catalog),
   ]);
 
   const meta = paginationMeta(total, page, pageSize);
@@ -69,13 +97,12 @@ export async function ProductCatalogPage({ catalog, searchParams }: ProductCatal
             {config.label}
           </h2>
           <p className="text-slate-600">
-            Inventario exclusivo para {config.singular}. No se mezcla con el otro catálogo.
+            Inventario exclusivo para {config.singular}. Cada fila representa una variación (color,
+            etc.).
           </p>
         </div>
         {permissions.canManageProducts ? (
-          <Link href={config.newHref}>
-            <Button>Cargar productos</Button>
-          </Link>
+          <ProductCatalogActions catalog={catalog} canManage={permissions.canManageProducts} />
         ) : null}
       </div>
 
@@ -97,26 +124,66 @@ export async function ProductCatalogPage({ catalog, searchParams }: ProductCatal
       <Card>
         <CardHeader
           title="Inventario"
-          description={`${total} producto${total === 1 ? "" : "s"} de ${config.singular} registrado${total === 1 ? "" : "s"}`}
+          description={
+            searchQuery
+              ? `${total} variación${total === 1 ? "" : "es"} para "${searchQuery}"`
+              : `${total} variación${total === 1 ? "" : "es"} de ${config.singular}`
+          }
         />
-        <ProductTable
-          products={products.map((product) => ({
-            ...product,
-            price: Number(product.price),
-          }))}
-          canManage={permissions.canManageProducts}
-          onDelete={deleteProductAction}
-          showType={false}
-          sort={sort}
-          dir={dir}
-          basePath={config.listHref}
-          preservedParams={preservedParams}
-        />
-        <PaginationControls
-          meta={meta}
-          basePath={config.listHref}
-          preservedParams={preservedParams}
-        />
+        <div className="mb-4">
+          <ProductSearch defaultQuery={searchQuery ?? ""} />
+        </div>
+
+        {total === 0 && !searchQuery ? (
+          <ProductCatalogEmptyState
+            catalog={catalog}
+            canManage={permissions.canManageProducts}
+          />
+        ) : (
+          <>
+            <ProductTable
+              variants={variants.map((variant) => ({
+                id: variant.id,
+                productId: variant.productId,
+                sku: variant.sku,
+                productName: variant.product.name,
+                variantLabel: variant.label,
+                categoryId: variant.product.categoryId,
+                categoryName: variant.product.category?.name ?? null,
+                description: variant.product.description,
+                basePrice: Number(variant.product.basePrice),
+                price: getVariantUnitPrice(
+                  { price: variant.price != null ? Number(variant.price) : null },
+                  { basePrice: Number(variant.product.basePrice) },
+                ),
+                quantityTotal: variant.quantityTotal,
+                quantityReserved: variant.quantityReserved,
+                quantityRented: variant.quantityRented,
+                type: variant.product.type as ProductCatalogType,
+                isActive: variant.isActive && variant.product.isActive,
+              }))}
+              categories={categories}
+              canManage={permissions.canManageProducts}
+              onDelete={deleteProductAction}
+              onLoadProduct={getProductForEditAction}
+              showType={false}
+              emptyMessage={
+                searchQuery
+                  ? `No se encontraron variaciones con "${searchQuery}".`
+                  : "No hay productos cargados."
+              }
+              sort={sort}
+              dir={dir}
+              basePath={config.listHref}
+              preservedParams={preservedParams}
+            />
+            <PaginationControls
+              meta={meta}
+              basePath={config.listHref}
+              preservedParams={preservedParams}
+            />
+          </>
+        )}
       </Card>
     </div>
   );
