@@ -73,22 +73,29 @@ export function pickPreservedParams(
 export const PRODUCT_SORT_COLUMNS = [
   "code",
   "name",
+  "variant",
+  "category",
   "price",
   "quantityTotal",
   "available",
   "quantityReserved",
   "quantityRented",
+  "isActive",
   "type",
 ] as const;
 
 export type ProductSortColumn = (typeof PRODUCT_SORT_COLUMNS)[number];
 
-export function productOrderBy(sort: string, dir: SortDirection) {
+export function variantOrderBy(sort: string, dir: SortDirection) {
   switch (sort) {
     case "code":
-      return { code: dir };
+      return { sku: dir };
     case "name":
-      return { name: dir };
+      return { product: { name: dir } };
+    case "variant":
+      return { label: dir };
+    case "category":
+      return { product: { category: { name: dir } } };
     case "price":
       return { price: dir };
     case "quantityTotal":
@@ -97,8 +104,10 @@ export function productOrderBy(sort: string, dir: SortDirection) {
       return { quantityReserved: dir };
     case "quantityRented":
       return { quantityRented: dir };
+    case "isActive":
+      return { isActive: dir };
     case "type":
-      return { type: dir };
+      return { product: { type: dir } };
     case "available":
       return [
         { quantityTotal: dir },
@@ -106,8 +115,13 @@ export function productOrderBy(sort: string, dir: SortDirection) {
         { quantityRented: inverseDir(dir) },
       ];
     default:
-      return { createdAt: "desc" as const };
+      return { product: { name: "asc" as const } };
   }
+}
+
+/** @deprecated Usar variantOrderBy */
+export function productOrderBy(sort: string, dir: SortDirection) {
+  return variantOrderBy(sort, dir);
 }
 
 export const SALE_SORT_COLUMNS = ["clientName", "status", "totalPrice", "createdAt"] as const;

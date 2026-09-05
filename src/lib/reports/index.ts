@@ -44,20 +44,20 @@ export async function getMonthlyEarnings(companyId: string, months = 6) {
 }
 
 export async function getDashboardStats(companyId: string) {
-  const [products, lowStock, activeRentals, presales, completedSales] = await Promise.all([
+  const [productCount, variants, activeRentals, presales, completedSales] = await Promise.all([
     prisma.product.count({ where: { companyId } }),
-    prisma.product.findMany({ where: { companyId } }),
+    prisma.productVariant.findMany({ where: { companyId } }),
     prisma.rentalOrder.count({ where: { companyId, status: "ACTIVE" } }),
     prisma.saleOrder.count({ where: { companyId, status: "PRESALE" } }),
     prisma.saleOrder.count({ where: { companyId, status: "COMPLETED" } }),
   ]);
 
-  const lowStockCount = lowStock.filter(
-    (p) => p.quantityTotal - p.quantityReserved - p.quantityRented <= 3,
+  const lowStockCount = variants.filter(
+    (variant) => variant.quantityTotal - variant.quantityReserved - variant.quantityRented <= 3,
   ).length;
 
   return {
-    products,
+    products: productCount,
     lowStockCount,
     activeRentals,
     presales,
