@@ -18,6 +18,7 @@ import {
   rentalOrderBy,
 } from "@/lib/sorting";
 import { getCompanyContext } from "@/lib/tenant";
+import { formatVariantDisplayName } from "@/lib/products/variants";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export default async function RentalsPage({
@@ -64,7 +65,7 @@ export default async function RentalsPage({
     prisma.rentalOrder.findMany({
       where: rentalsWhere,
       include: {
-        items: { include: { product: true } },
+        items: { include: { productVariant: { include: { product: true } } } },
         return: { include: { items: true } },
       },
       orderBy: rentalOrderBy(sort, dir),
@@ -136,8 +137,11 @@ export default async function RentalsPage({
                           rentalId={rental.id}
                           status={rental.status}
                           items={rental.items.map((item) => ({
-                            productId: item.productId,
-                            productName: item.product.name,
+                            productVariantId: item.productVariantId,
+                            productName: formatVariantDisplayName(
+                              item.productVariant.product.name,
+                              item.productVariant.label,
+                            ),
                             quantity: item.quantity,
                           }))}
                           canManage={permissions.canCreateOrders}

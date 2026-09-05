@@ -10,6 +10,7 @@ import {
 } from "@/components/rentals/rental-detail-tables";
 import { prisma } from "@/lib/db";
 import { getCompanyContext } from "@/lib/tenant";
+import { formatVariantDisplayName } from "@/lib/products/variants";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export default async function RentalDetailPage({
@@ -27,8 +28,8 @@ export default async function RentalDetailPage({
   const rental = await prisma.rentalOrder.findFirst({
     where: { id, companyId: companyId! },
     include: {
-      items: { include: { product: true } },
-      return: { include: { items: true } },
+      items: { include: { productVariant: { include: { product: true } } } },
+      return: { include: { items: { include: { productVariant: { include: { product: true } } } } } },
     },
   });
 
@@ -112,7 +113,10 @@ export default async function RentalDetailPage({
             currency={company.currency}
             items={rental.items.map((item) => ({
               id: item.id,
-              productName: item.product.name,
+              productName: formatVariantDisplayName(
+                item.productVariant.product.name,
+                item.productVariant.label,
+              ),
               quantity: item.quantity,
               unitPrice: Number(item.unitPrice),
               subtotal: Number(item.unitPrice) * item.quantity,
@@ -127,9 +131,10 @@ export default async function RentalDetailPage({
           <RentalReturnItemsTable
             items={rental.return.items.map((item) => ({
               id: item.id,
-              productName:
-                rental.items.find((row) => row.productId === item.productId)?.product.name ??
-                item.productId,
+              productName: formatVariantDisplayName(
+                item.productVariant.product.name,
+                item.productVariant.label,
+              ),
               quantityReturned: item.quantityReturned,
               quantityMissing: item.quantityMissing,
             }))}
@@ -144,8 +149,11 @@ export default async function RentalDetailPage({
             rentalId={rental.id}
             status={rental.status}
             items={rental.items.map((item) => ({
-              productId: item.productId,
-              productName: item.product.name,
+              productVariantId: item.productVariantId,
+              productName: formatVariantDisplayName(
+                item.productVariant.product.name,
+                item.productVariant.label,
+              ),
               quantity: item.quantity,
             }))}
             canManage

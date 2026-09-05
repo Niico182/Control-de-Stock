@@ -2,6 +2,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { RentalOrderPdfDocument } from "@/lib/pdf/rental-order";
+import { formatVariantDisplayName } from "@/lib/products/variants";
 import { prisma } from "@/lib/db";
 
 export async function GET(
@@ -20,7 +21,7 @@ export async function GET(
     where: { id },
     include: {
       company: true,
-      items: { include: { product: true } },
+      items: { include: { productVariant: { include: { product: true } } } },
     },
   });
 
@@ -51,7 +52,10 @@ export async function GET(
         rentalDate: rental.rentalDate,
         totalPrice: Number(rental.totalPrice),
         items: rental.items.map((item) => ({
-          name: item.product.name,
+          name: formatVariantDisplayName(
+            item.productVariant.product.name,
+            item.productVariant.label,
+          ),
           quantity: item.quantity,
           unitPrice: Number(item.unitPrice),
         })),

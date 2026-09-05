@@ -11,6 +11,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import { SortableTableHead } from "@/components/ui/sortable-table-head";
 import { prisma } from "@/lib/db";
+import { getOrderProductOptions } from "@/lib/products/order-options";
 import { paginationMeta, parsePaginationParams } from "@/lib/pagination";
 import {
   pickPreservedParams,
@@ -47,19 +48,13 @@ export default async function SalesPage({
   const [sales, total, products] = await Promise.all([
     prisma.saleOrder.findMany({
       where: salesWhere,
-      include: { items: { include: { product: true } } },
+      include: { items: { include: { productVariant: { include: { product: true } } } } },
       orderBy: saleOrderBy(sort, dir),
       skip,
       take,
     }),
     prisma.saleOrder.count({ where: salesWhere }),
-    prisma.product.findMany({
-      where: {
-        companyId: companyId!,
-        type: "SALE",
-      },
-      orderBy: { name: "asc" },
-    }),
+    getOrderProductOptions(companyId!, "SALE"),
   ]);
 
   const meta = paginationMeta(total, page, pageSize);
@@ -133,15 +128,7 @@ export default async function SalesPage({
       {total === 0 && permissions.canCreateOrders ? (
         <Card>
           <CardHeader title="Crear primera venta" />
-          <SaleForm
-            products={products.map((p) => ({
-              id: p.id,
-              name: p.name,
-              price: Number(p.price),
-              available:
-                p.quantityTotal - p.quantityReserved - p.quantityRented,
-            }))}
-          />
+          <SaleForm products={products} />
         </Card>
       ) : null}
     </div>

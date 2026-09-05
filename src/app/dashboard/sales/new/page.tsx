@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { SaleForm } from "@/components/sales/sale-form";
 import { Card, CardHeader } from "@/components/ui/card";
-import { prisma } from "@/lib/db";
+import { getOrderProductOptions } from "@/lib/products/order-options";
 import { getCompanyContext } from "@/lib/tenant";
 
 export default async function NewSalePage() {
@@ -15,13 +15,7 @@ export default async function NewSalePage() {
     redirect("/dashboard/sales");
   }
 
-  const products = await prisma.product.findMany({
-    where: {
-      companyId: companyId!,
-      type: "SALE",
-    },
-    orderBy: { name: "asc" },
-  });
+  const products = await getOrderProductOptions(companyId!, "SALE");
 
   return (
     <div className="max-w-5xl space-y-6">
@@ -31,14 +25,7 @@ export default async function NewSalePage() {
       </div>
       <Card>
         <CardHeader title="Datos de la venta" />
-        <SaleForm
-          products={products.map((p) => ({
-            id: p.id,
-            name: p.name,
-            price: Number(p.price),
-            available: p.quantityTotal - p.quantityReserved - p.quantityRented,
-          }))}
-        />
+        <SaleForm products={products} />
       </Card>
     </div>
   );

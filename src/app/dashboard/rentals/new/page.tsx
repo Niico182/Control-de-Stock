@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { RentalForm } from "@/components/rentals/rental-form";
 import { Card, CardHeader } from "@/components/ui/card";
-import { prisma } from "@/lib/db";
+import { getOrderProductOptions } from "@/lib/products/order-options";
 import { getCompanyContext } from "@/lib/tenant";
 
 export default async function NewRentalPage() {
@@ -11,13 +11,7 @@ export default async function NewRentalPage() {
     redirect("/dashboard/rentals");
   }
 
-  const products = await prisma.product.findMany({
-    where: {
-      companyId: companyId!,
-      type: "RENTAL",
-    },
-    orderBy: { name: "asc" },
-  });
+  const products = await getOrderProductOptions(companyId!, "RENTAL");
 
   return (
     <div className="max-w-5xl space-y-6">
@@ -27,14 +21,7 @@ export default async function NewRentalPage() {
       </div>
       <Card>
         <CardHeader title="Datos del pedido" />
-        <RentalForm
-          products={products.map((p) => ({
-            id: p.id,
-            name: p.name,
-            price: Number(p.price),
-            available: p.quantityTotal - p.quantityReserved - p.quantityRented,
-          }))}
-        />
+        <RentalForm products={products} />
       </Card>
     </div>
   );
