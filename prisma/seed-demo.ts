@@ -66,21 +66,29 @@ async function main() {
     });
 
     for (const item of RENTAL_CATALOG) {
-      const created = await tx.product.create({
+      const product = await tx.product.create({
         data: {
           companyId: company.id,
-          code: item.code,
           name: item.name,
-          price: item.price,
-          quantityTotal: item.quantity,
+          basePrice: item.price,
           type: "RENTAL",
+        },
+      });
+
+      const variant = await tx.productVariant.create({
+        data: {
+          productId: product.id,
+          companyId: company.id,
+          sku: item.code,
+          label: "Único",
+          quantityTotal: item.quantity,
         },
       });
 
       await tx.stockMovement.create({
         data: {
           companyId: company.id,
-          productId: created.id,
+          productVariantId: variant.id,
           userId: admin.id,
           type: "INITIAL",
           quantity: item.quantity,

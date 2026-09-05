@@ -75,7 +75,7 @@ async function main() {
 
     if (productIds.length > 0) {
       await tx.stockMovement.deleteMany({
-        where: { productId: { in: productIds } },
+        where: { companyId: company.id },
       });
       await tx.product.deleteMany({
         where: { companyId: company.id },
@@ -86,18 +86,26 @@ async function main() {
       const product = await tx.product.create({
         data: {
           companyId: company.id,
-          code: item.code,
           name: item.name,
-          price: item.price,
-          quantityTotal: item.quantity,
+          basePrice: item.price,
           type: "RENTAL",
+        },
+      });
+
+      const variant = await tx.productVariant.create({
+        data: {
+          productId: product.id,
+          companyId: company.id,
+          sku: item.code,
+          label: "Único",
+          quantityTotal: item.quantity,
         },
       });
 
       await tx.stockMovement.create({
         data: {
           companyId: company.id,
-          productId: product.id,
+          productVariantId: variant.id,
           userId: admin?.id,
           type: "INITIAL",
           quantity: item.quantity,

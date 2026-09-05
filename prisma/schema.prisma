@@ -71,6 +71,7 @@ model Company {
 
   members      CompanyMember[]
   products     Product[]
+  categories   ProductCategory[]
   saleOrders   SaleOrder[]
   rentalOrders RentalOrder[]
   invitations  Invitation[]
@@ -112,44 +113,87 @@ model Invitation {
   @@index([email, companyId])
 }
 
+model ProductCategory {
+  id             String      @id @default(uuid())
+  companyId      String
+  name           String
+  normalizedName String
+  type           ProductType
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([companyId, type, normalizedName])
+  @@index([companyId, type])
+}
+
 model Product {
-  id               String      @id @default(uuid())
-  companyId        String
-  code             String
-  name             String
-  price            Decimal
-  quantityTotal    Int         @default(0)
-  quantityReserved Int         @default(0)
-  quantityRented   Int         @default(0)
-  type             ProductType @default(BOTH)
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  id          String      @id @default(uuid())
+  companyId   String
+  name        String
+  categoryId  String?
+  description String?
+  basePrice   Decimal
+  baseCost    Decimal?
+  type        ProductType @default(BOTH)
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
-  company          Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  stockMovements   StockMovement[]
-  saleOrderItems   SaleOrderItem[]
-  rentalOrderItems RentalOrderItem[]
+  company  Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  category ProductCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  variants ProductVariant[]
 
-  @@unique([companyId, code])
   @@index([companyId])
 }
 
+model ProductVariant {
+  id                   String   @id @default(uuid())
+  productId            String
+  companyId            String
+  sku                  String
+  label                String
+  attributes           Json     @default("{}")
+  normalizedAttributes String   @default("")
+  price                Decimal?
+  cost                 Decimal?
+  quantityTotal        Int      @default(0)
+  quantityReserved     Int      @default(0)
+  quantityRented       Int      @default(0)
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  product          Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  stockMovements   StockMovement[]
+  saleOrderItems   SaleOrderItem[]
+  rentalOrderItems RentalOrderItem[]
+  rentalReturnItems RentalReturnItem[]
+
+  @@unique([companyId, sku])
+  @@unique([productId, normalizedAttributes])
+  @@index([companyId])
+  @@index([productId])
+}
+
 model StockMovement {
-  id            String            @id @default(uuid())
-  companyId     String
-  productId     String
-  userId        String?
-  type          StockMovementType
-  quantity      Int
-  referenceType String?
-  referenceId   String?
-  notes         String?
-  createdAt     DateTime          @default(now())
+  id               String            @id @default(uuid())
+  companyId        String
+  productVariantId String
+  userId           String?
+  type             StockMovementType
+  quantity         Int
+  referenceType    String?
+  referenceId      String?
+  notes            String?
+  createdAt        DateTime          @default(now())
 
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user    User?   @relation(fields: [userId], references: [id])
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+  user           User?          @relation(fields: [userId], references: [id])
 
-  @@index([companyId, productId])
+  @@index([companyId, productVariantId])
 }
 
 model SaleOrder {
@@ -172,14 +216,14 @@ model SaleOrder {
 }
 
 model SaleOrderItem {
-  id          String  @id @default(uuid())
-  saleOrderId String
-  productId   String
-  quantity    Int
-  unitPrice   Decimal
+  id               String  @id @default(uuid())
+  saleOrderId      String
+  productVariantId String
+  quantity         Int
+  unitPrice        Decimal
 
-  saleOrder SaleOrder @relation(fields: [saleOrderId], references: [id], onDelete: Cascade)
-  product   Product   @relation(fields: [productId], references: [id])
+  saleOrder      SaleOrder      @relation(fields: [saleOrderId], references: [id], onDelete: Cascade)
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id])
 }
 
 model RentalOrder {
@@ -205,14 +249,14 @@ model RentalOrder {
 }
 
 model RentalOrderItem {
-  id            String  @id @default(uuid())
-  rentalOrderId String
-  productId     String
-  quantity      Int
-  unitPrice     Decimal
+  id               String  @id @default(uuid())
+  rentalOrderId    String
+  productVariantId String
+  quantity         Int
+  unitPrice        Decimal
 
-  rentalOrder RentalOrder @relation(fields: [rentalOrderId], references: [id], onDelete: Cascade)
-  product     Product     @relation(fields: [productId], references: [id])
+  rentalOrder    RentalOrder    @relation(fields: [rentalOrderId], references: [id], onDelete: Cascade)
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id])
 }
 
 model RentalReturn {
@@ -228,9 +272,10 @@ model RentalReturn {
 model RentalReturnItem {
   id               String @id @default(uuid())
   rentalReturnId   String
-  productId        String
+  productVariantId String
   quantityReturned Int
   quantityMissing  Int    @default(0)
 
-  rentalReturn RentalReturn @relation(fields: [rentalReturnId], references: [id], onDelete: Cascade)
+  rentalReturn   RentalReturn   @relation(fields: [rentalReturnId], references: [id], onDelete: Cascade)
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id])
 }
