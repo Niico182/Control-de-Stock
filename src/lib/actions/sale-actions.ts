@@ -49,7 +49,7 @@ export async function createSaleAction(formData: FormData) {
           status: "PRESALE",
           items: {
             create: parsed.data.items.map((item) => ({
-              productId: item.productId,
+              productVariantId: item.productVariantId,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
             })),
@@ -61,7 +61,7 @@ export async function createSaleAction(formData: FormData) {
       for (const item of sale.items) {
         await reserveForSale(tx, {
           companyId: companyId!,
-          productId: item.productId,
+          productVariantId: item.productVariantId,
           quantity: item.quantity,
           userId: session.user.id,
           referenceId: sale.id,
@@ -94,7 +94,7 @@ export async function completeSaleAction(saleId: string) {
       for (const item of sale.items) {
         await completeSale(tx, {
           companyId: companyId!,
-          productId: item.productId,
+          productVariantId: item.productVariantId,
           quantity: item.quantity,
           userId: session.user.id,
           referenceId: sale.id,
@@ -134,7 +134,7 @@ export async function cancelSaleAction(saleId: string) {
       for (const item of sale.items) {
         await cancelSaleReservation(tx, {
           companyId: companyId!,
-          productId: item.productId,
+          productVariantId: item.productVariantId,
           quantity: item.quantity,
           userId: session.user.id,
           referenceId: sale.id,

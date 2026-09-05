@@ -54,7 +54,7 @@ export async function createRentalAction(formData: FormData) {
           status: "ACTIVE",
           items: {
             create: parsed.data.items.map((item) => ({
-              productId: item.productId,
+              productVariantId: item.productVariantId,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
             })),
@@ -66,7 +66,7 @@ export async function createRentalAction(formData: FormData) {
       for (const item of rental.items) {
         await rentOutProducts(tx, {
           companyId: companyId!,
-          productId: item.productId,
+          productVariantId: item.productVariantId,
           quantity: item.quantity,
           userId: session.user.id,
           referenceId: rental.id,
@@ -120,7 +120,7 @@ export async function returnRentalAction(formData: FormData) {
           notes: parsed.data.notes,
           items: {
             create: parsed.data.items.map((item) => ({
-              productId: item.productId,
+              productVariantId: item.productVariantId,
               quantityReturned: item.quantityReturned,
               quantityMissing: item.quantityMissing,
             })),
@@ -131,7 +131,7 @@ export async function returnRentalAction(formData: FormData) {
       for (const item of parsed.data.items) {
         await returnRentalProducts(tx, {
           companyId: companyId!,
-          productId: item.productId,
+          productVariantId: item.productVariantId,
           quantityReturned: item.quantityReturned,
           quantityMissing: item.quantityMissing,
           userId: session.user.id,
@@ -174,7 +174,7 @@ export async function cancelRentalAction(rentalId: string) {
       for (const item of rental.items) {
         await cancelRental(tx, {
           companyId: companyId!,
-          productId: item.productId,
+          productVariantId: item.productVariantId,
           quantity: item.quantity,
           userId: session.user.id,
           referenceId: rental.id,
